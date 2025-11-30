@@ -9,15 +9,15 @@ import { IncomingHttpHeaders } from 'http';
 
 describe('validateAuthHeaders', () => {
   describe('Error cases', () => {
-    it('should return error when no headers provided', () => {
+    it('should return invalid (not error) when no headers provided - allows .env file usage', () => {
       const result = validateAuthHeaders(undefined);
       
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('No headers provided');
+      expect(result.errors).toEqual([]); // Not an error - user may be using .env file
       expect(result.config).toBeUndefined();
     });
 
-    it('should return error when x-sap-url is missing and no x-sap-destination', () => {
+    it('should return invalid (not error) when x-sap-auth-type is provided but x-sap-url is missing - allows .env file usage', () => {
       const headers: IncomingHttpHeaders = {
         'x-sap-auth-type': 'jwt',
       };
@@ -25,7 +25,10 @@ describe('validateAuthHeaders', () => {
       const result = validateAuthHeaders(headers);
       
       expect(result.isValid).toBe(false);
-      expect(result.errors).toContain('x-sap-url header is required when x-sap-destination is not present');
+      // If no URL provided, it's not an error - user may be using .env file
+      // The error will be caught when trying to use the config
+      expect(result.errors).toEqual([]);
+      expect(result.config).toBeUndefined();
     });
 
     it('should return error when x-sap-auth-type is missing and no x-sap-destination or x-mcp-destination', () => {

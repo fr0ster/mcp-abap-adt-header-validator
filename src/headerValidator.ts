@@ -107,10 +107,11 @@ function validateSapDestinationAuth(
 /**
  * Validate MCP destination-based authentication (medium-high priority)
  * x-mcp-destination - uses AuthBroker, always JWT (no x-sap-auth-type needed)
+ * x-sap-url is required for MCP destination (unlike x-sap-destination)
  */
 function validateMcpDestinationAuth(
   headers: IncomingHttpHeaders,
-  sapUrl: string
+  sapUrl?: string
 ): ValidatedAuthConfig | null {
   const destinationRaw = headers['x-mcp-destination'];
   if (!destinationRaw) {
@@ -128,7 +129,19 @@ function validateMcpDestinationAuth(
     return {
       priority: AuthMethodPriority.NONE,
       authType: 'jwt', // MCP destination always uses JWT
-      sapUrl,
+      sapUrl: sapUrl || '',
+      errors,
+      warnings,
+    };
+  }
+
+  // x-sap-url is required for MCP destination
+  if (!sapUrl) {
+    errors.push('x-sap-url header is required when x-mcp-destination is present');
+    return {
+      priority: AuthMethodPriority.NONE,
+      authType: 'jwt',
+      sapUrl: '',
       errors,
       warnings,
     };
@@ -273,11 +286,11 @@ function validateBasicAuth(
  * @returns Validation result with prioritized authentication configuration
  */
 export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValidationResult {
-  // No headers provided
+  // No headers provided - this is not an error, user may be using .env file
   if (!headers) {
     return {
       isValid: false,
-      errors: ['No headers provided'],
+      errors: [],
       warnings: [],
     };
   }
@@ -306,26 +319,46 @@ export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValida
     }
   }
 
-  // For other auth methods, x-sap-url is required
+  // For other auth methods, x-sap-url is required (but MCP destination can work without it if URL is optional)
   const sapUrl = getHeaderValue(headers, 'x-sap-url');
 
-  // Validate required headers
-  if (!sapUrl) {
-    errors.push('x-sap-url header is required when x-sap-destination is not present');
-    return {
-      isValid: false,
-      errors,
-      warnings,
-    };
+  // Check for MCP destination (requires x-sap-url header)
+  if (sapUrl) {
+    // Validate URL format first
+    if (!isValidUrl(sapUrl)) {
+      errors.push(`x-sap-url is not a valid URL: ${sapUrl}`);
+      return {
+        isValid: false,
+        errors,
+        warnings,
+      };
+    }
+
+    const mcpDestinationConfig = validateMcpDestinationAuth(headers, sapUrl);
+    if (mcpDestinationConfig) {
+      if (mcpDestinationConfig.errors.length === 0) {
+        return {
+          isValid: true,
+          config: mcpDestinationConfig,
+          errors: [],
+          warnings: mcpDestinationConfig.warnings,
+        };
+      } else {
+        return {
+          isValid: false,
+          errors: mcpDestinationConfig.errors,
+          warnings: mcpDestinationConfig.warnings,
+        };
+      }
+    }
   }
 
-  // Validate URL format
-  if (!isValidUrl(sapUrl)) {
-    errors.push(`x-sap-url is not a valid URL: ${sapUrl}`);
+  // If no auth headers at all, return empty result (not an error - may use .env file)
+  if (!sapUrl) {
     return {
       isValid: false,
-      errors,
-      warnings,
+      errors: [],
+      warnings: [],
     };
   }
 
