@@ -174,7 +174,22 @@ describe('validateAuthHeaders', () => {
   });
 
   describe('MCP destination-based authentication (medium-high priority)', () => {
-    it('should validate x-mcp-destination auth without x-sap-auth-type', () => {
+    it('should validate x-mcp-destination auth without x-sap-url (URL from destination)', () => {
+      const headers: IncomingHttpHeaders = {
+        'x-mcp-destination': 'TRIAL',
+      };
+      
+      const result = validateAuthHeaders(headers);
+      
+      expect(result.isValid).toBe(true);
+      expect(result.config).toBeDefined();
+      expect(result.config?.priority).toBe(AuthMethodPriority.MCP_DESTINATION);
+      expect(result.config?.destination).toBe('TRIAL');
+      expect(result.config?.authType).toBe('jwt'); // Always JWT
+      expect(result.config?.sapUrl).toBe(''); // URL will be loaded from destination
+    });
+
+    it('should validate x-mcp-destination auth and warn when x-sap-url is provided', () => {
       const headers: IncomingHttpHeaders = {
         'x-sap-url': 'https://test.sap.com',
         'x-mcp-destination': 'TRIAL',
@@ -187,7 +202,8 @@ describe('validateAuthHeaders', () => {
       expect(result.config?.priority).toBe(AuthMethodPriority.MCP_DESTINATION);
       expect(result.config?.destination).toBe('TRIAL');
       expect(result.config?.authType).toBe('jwt'); // Always JWT
-      expect(result.config?.sapUrl).toBe('https://test.sap.com');
+      expect(result.config?.sapUrl).toBe(''); // URL from destination, not header
+      expect(result.warnings.some(w => w.includes('x-sap-url is ignored'))).toBe(true);
     });
 
     it('should validate x-mcp-destination auth and warn when x-sap-auth-type is provided', () => {
@@ -204,6 +220,7 @@ describe('validateAuthHeaders', () => {
       expect(result.config?.destination).toBe('TRIAL');
       expect(result.config?.authType).toBe('jwt');
       expect(result.warnings.some(w => w.includes('x-sap-auth-type is ignored'))).toBe(true);
+      expect(result.warnings.some(w => w.includes('x-sap-url is ignored'))).toBe(true);
     });
 
     it('should validate x-mcp-destination auth and warn when x-sap-auth-type is xsuaa', () => {
@@ -220,6 +237,7 @@ describe('validateAuthHeaders', () => {
       expect(result.config?.destination).toBe('PRODUCTION');
       expect(result.config?.authType).toBe('jwt'); // Always JWT, not xsuaa
       expect(result.warnings.some(w => w.includes('x-sap-auth-type is ignored'))).toBe(true);
+      expect(result.warnings.some(w => w.includes('x-sap-url is ignored'))).toBe(true);
     });
 
     it('should return warning when x-mcp-destination and direct JWT token both present', () => {
@@ -236,6 +254,7 @@ describe('validateAuthHeaders', () => {
       expect(result.config?.priority).toBe(AuthMethodPriority.MCP_DESTINATION);
       expect(result.warnings.some(w => w.includes('x-sap-jwt-token is ignored'))).toBe(true);
       expect(result.warnings.some(w => w.includes('x-sap-auth-type is ignored'))).toBe(true);
+      expect(result.warnings.some(w => w.includes('x-sap-url is ignored'))).toBe(true);
     });
 
     it('should prioritize x-mcp-destination over basic auth', () => {
@@ -254,11 +273,11 @@ describe('validateAuthHeaders', () => {
       expect(result.config?.priority).toBe(AuthMethodPriority.MCP_DESTINATION);
       expect(result.config?.destination).toBe('TRIAL');
       expect(result.config?.authType).toBe('jwt');
+      expect(result.warnings.some(w => w.includes('x-sap-url is ignored'))).toBe(true);
     });
 
     it('should return error when x-mcp-destination is empty', () => {
       const headers: IncomingHttpHeaders = {
-        'x-sap-url': 'https://test.sap.com',
         'x-mcp-destination': '   ',
       };
       

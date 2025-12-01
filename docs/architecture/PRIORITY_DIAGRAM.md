@@ -54,7 +54,7 @@ flowchart TD
 | Priority | Method | Required Headers | Optional Headers | URL Source |
 |----------|--------|------------------|------------------|------------|
 | **4** | SAP Destination | `x-sap-destination` | `x-sap-client`<br/>`x-sap-login`<br/>`x-sap-password` | From destination<br/>(service key/.env) |
-| **3** | MCP Destination | `x-sap-url`<br/>`x-mcp-destination` | `x-sap-client` | From header<br/>(`x-sap-url`) |
+| **3** | MCP Destination | `x-mcp-destination` | `x-sap-client` | From destination<br/>(service key/.env) |
 | **2** | Direct JWT | `x-sap-url`<br/>`x-sap-auth-type: jwt/xsuaa`<br/>`x-sap-jwt-token` | `x-sap-refresh-token`<br/>`x-sap-uaa-url`<br/>`x-sap-uaa-client-id`<br/>`x-sap-uaa-client-secret`<br/>`x-sap-client` | From header<br/>(`x-sap-url`) |
 | **1** | Basic | `x-sap-url`<br/>`x-sap-auth-type: basic`<br/>`x-sap-login`<br/>`x-sap-password` | - | From header<br/>(`x-sap-url`) |
 
@@ -84,12 +84,12 @@ x-sap-password: pass
 ### ✅ Valid: MCP Destination
 
 ```
-x-sap-url: https://test.sap.com
 x-mcp-destination: TRIAL
 ```
-- URL: From `x-sap-url` header
+- URL: Loaded from destination service key or .env
 - Auth: Always JWT via AuthBroker (no `x-sap-auth-type` needed)
 - Optional: `x-sap-client`
+- Note: If `x-sap-url` is provided, it will be ignored (warning issued)
 - Note: If `x-sap-auth-type` is provided, it will be ignored (warning issued)
 
 ### ✅ Valid: Direct JWT

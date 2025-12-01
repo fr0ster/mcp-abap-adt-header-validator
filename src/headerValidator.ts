@@ -12,9 +12,15 @@ import { AuthType, AuthMethodPriority, ValidatedAuthConfig, HeaderValidationResu
 
 /**
  * Extract header value (handles array values)
+ * Node.js normalizes headers to lowercase, but check both cases for safety
  */
 function getHeaderValue(headers: IncomingHttpHeaders, name: string): string | undefined {
-  const value = headers[name];
+  // Try lowercase first (Node.js normalizes to lowercase)
+  let value = headers[name.toLowerCase()];
+  // If not found, try original case (for compatibility)
+  if (!value) {
+    value = headers[name];
+  }
   if (!value) {
     return undefined;
   }
@@ -44,7 +50,8 @@ function isValidUrl(url: string): boolean {
 function validateSapDestinationAuth(
   headers: IncomingHttpHeaders
 ): ValidatedAuthConfig | null {
-  const destinationRaw = headers['x-sap-destination'];
+  // Check both lowercase and original case (Node.js normalizes to lowercase, but check both for safety)
+  const destinationRaw = headers['x-sap-destination'] || headers['X-SAP-Destination'];
   if (!destinationRaw) {
     return null;
   }
@@ -107,13 +114,15 @@ function validateSapDestinationAuth(
 /**
  * Validate MCP destination-based authentication (medium-high priority)
  * x-mcp-destination - uses AuthBroker, always JWT (no x-sap-auth-type needed)
- * x-sap-url is required for MCP destination (unlike x-sap-destination)
+ * URL is taken from destination (service key or .env), not from x-sap-url header
+ * x-sap-url is optional - if provided, it will be ignored (warning issued)
  */
 function validateMcpDestinationAuth(
   headers: IncomingHttpHeaders,
   sapUrl?: string
 ): ValidatedAuthConfig | null {
-  const destinationRaw = headers['x-mcp-destination'];
+  // Check both lowercase and original case (Node.js normalizes to lowercase, but check both for safety)
+  const destinationRaw = headers['x-mcp-destination'] || headers['X-MCP-Destination'];
   if (!destinationRaw) {
     return null;
   }
@@ -129,22 +138,15 @@ function validateMcpDestinationAuth(
     return {
       priority: AuthMethodPriority.NONE,
       authType: 'jwt', // MCP destination always uses JWT
-      sapUrl: sapUrl || '',
+      sapUrl: '', // URL will be loaded from destination
       errors,
       warnings,
     };
   }
 
-  // x-sap-url is required for MCP destination
-  if (!sapUrl) {
-    errors.push('x-sap-url header is required when x-mcp-destination is present');
-    return {
-      priority: AuthMethodPriority.NONE,
-      authType: 'jwt',
-      sapUrl: '',
-      errors,
-      warnings,
-    };
+  // Warning if x-sap-url is provided (URL comes from destination, not header)
+  if (sapUrl) {
+    warnings.push('x-sap-url is ignored when x-mcp-destination is present (URL is loaded from destination service key or .env file)');
   }
 
   // Warning if x-sap-auth-type is provided (not needed for x-mcp-destination)
@@ -165,7 +167,7 @@ function validateMcpDestinationAuth(
   return {
     priority: AuthMethodPriority.MCP_DESTINATION,
     authType: 'jwt', // Always JWT for x-mcp-destination
-    sapUrl,
+    sapUrl: '', // URL will be loaded from destination (service key or .env)
     sapClient,
     destination,
     errors,
@@ -319,42 +321,31 @@ export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValida
     }
   }
 
-  // For other auth methods, x-sap-url is required (but MCP destination can work without it if URL is optional)
+  // Check for MCP destination (doesn't require x-sap-url, URL comes from destination)
   const sapUrl = getHeaderValue(headers, 'x-sap-url');
-
-  // Check for MCP destination (requires x-sap-url header)
-  if (sapUrl) {
-    // Validate URL format first
-    if (!isValidUrl(sapUrl)) {
-      errors.push(`x-sap-url is not a valid URL: ${sapUrl}`);
+  const mcpDestinationConfig = validateMcpDestinationAuth(headers, sapUrl);
+  if (mcpDestinationConfig) {
+    // MCP destination found - URL comes from destination, not header
+    if (mcpDestinationConfig.errors.length === 0) {
+      return {
+        isValid: true,
+        config: mcpDestinationConfig,
+        errors: [],
+        warnings: mcpDestinationConfig.warnings,
+      };
+    } else {
+      // Has errors, continue to check other methods or return error
       return {
         isValid: false,
-        errors,
-        warnings,
+        errors: mcpDestinationConfig.errors,
+        warnings: mcpDestinationConfig.warnings,
       };
-    }
-
-    const mcpDestinationConfig = validateMcpDestinationAuth(headers, sapUrl);
-    if (mcpDestinationConfig) {
-      if (mcpDestinationConfig.errors.length === 0) {
-        return {
-          isValid: true,
-          config: mcpDestinationConfig,
-          errors: [],
-          warnings: mcpDestinationConfig.warnings,
-        };
-      } else {
-        return {
-          isValid: false,
-          errors: mcpDestinationConfig.errors,
-          warnings: mcpDestinationConfig.warnings,
-        };
-      }
     }
   }
 
-  // If no auth headers at all, return empty result (not an error - may use .env file)
+  // For other auth methods, x-sap-url is required
   if (!sapUrl) {
+    // If no auth headers at all, return empty result (not an error - may use .env file)
     return {
       isValid: false,
       errors: [],
@@ -362,14 +353,18 @@ export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValida
     };
   }
 
+  // Validate URL format
+  if (!isValidUrl(sapUrl)) {
+    errors.push(`x-sap-url is not a valid URL: ${sapUrl}`);
+    return {
+      isValid: false,
+      errors,
+      warnings,
+    };
+  }
+
   // Try to validate authentication methods in priority order
   const configs: ValidatedAuthConfig[] = [];
-
-  // 2. MCP destination-based auth (medium-high priority) - doesn't require x-sap-auth-type
-  const mcpDestinationConfig = validateMcpDestinationAuth(headers, sapUrl);
-  if (mcpDestinationConfig) {
-    configs.push(mcpDestinationConfig);
-  }
 
   // 3. Other auth methods require x-sap-auth-type
   const sapAuthType = getHeaderValue(headers, 'x-sap-auth-type');
@@ -413,9 +408,12 @@ export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValida
       } else if (authType === 'basic') {
         errors.push('Basic authentication requires x-sap-login and x-sap-password headers');
       }
-    } else if (mcpDestinationConfig && mcpDestinationConfig.errors.length > 0) {
-      // MCP destination was found but has errors
-      errors.push(...mcpDestinationConfig.errors);
+    } else {
+      // Check if MCP destination was found but has errors
+      const mcpConfig = validateMcpDestinationAuth(headers, sapUrl);
+      if (mcpConfig && mcpConfig.errors.length > 0) {
+        errors.push(...mcpConfig.errors);
+      }
     }
     
     return {

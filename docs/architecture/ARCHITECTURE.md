@@ -58,7 +58,7 @@ flowchart TD
 | Priority | Method | Required Headers | Optional Headers | URL Source |
 |----------|--------|------------------|------------------|------------|
 | **4** | SAP Destination | `x-sap-destination` | `x-sap-client`<br/>`x-sap-login`<br/>`x-sap-password` | From destination<br/>(service key/.env) |
-| **3** | MCP Destination | `x-sap-url`<br/>`x-mcp-destination` | `x-sap-client` | From header<br/>(`x-sap-url`) |
+| **3** | MCP Destination | `x-mcp-destination` | `x-sap-client` | From destination<br/>(service key/.env) |
 | **2** | Direct JWT | `x-sap-url`<br/>`x-sap-auth-type: jwt/xsuaa`<br/>`x-sap-jwt-token` | `x-sap-refresh-token`<br/>`x-sap-uaa-url`<br/>`x-sap-uaa-client-id`<br/>`x-sap-uaa-client-secret`<br/>`x-sap-client` | From header<br/>(`x-sap-url`) |
 | **1** | Basic | `x-sap-url`<br/>`x-sap-auth-type: basic`<br/>`x-sap-login`<br/>`x-sap-password` | - | From header<br/>(`x-sap-url`) |
 
@@ -110,21 +110,22 @@ Authentication methods are evaluated in the following priority order (highest to
 - Automatic token validation and refresh
 
 **Required Headers**:
-- `x-sap-url` - SAP system URL
 - `x-mcp-destination` - Destination name
 
 **Optional Headers**:
 - `x-sap-client` - SAP client number
 
 **Important**: 
+- `x-sap-url` is **NOT required** - URL is loaded from destination (service key or .env file)
+- If `x-sap-url` is provided, it will be ignored (warning issued)
 - `x-sap-auth-type` is **NOT required** - always uses JWT
 - If `x-sap-auth-type` is provided, it will be ignored (warning issued)
 
 **Example**:
 ```typescript
 {
-  'x-sap-url': 'https://test.sap.com',
   'x-mcp-destination': 'TRIAL',
+  // Note: x-sap-url not needed - URL comes from destination
   // Note: x-sap-auth-type not needed - always JWT
 }
 ```
