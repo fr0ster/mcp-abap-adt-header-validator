@@ -9,6 +9,56 @@ Header validator for MCP ABAP ADT - validates and prioritizes authentication hea
 - ✅ **Error Reporting**: Detailed error messages and warnings
 - ✅ **Type Safety**: Full TypeScript support with type definitions
 
+## Responsibilities and Design Principles
+
+### Core Development Principle
+
+**Interface-Only Communication**: This package follows a fundamental development principle: **all interactions with external dependencies happen ONLY through interfaces**. The code knows **NOTHING beyond what is defined in the interfaces**.
+
+This means:
+- Does not know about concrete implementation classes from other packages
+- Does not know about internal data structures or methods not defined in interfaces
+- Does not make assumptions about implementation behavior beyond interface contracts
+- Does not access properties or methods not explicitly defined in interfaces
+
+This principle ensures:
+- **Loose coupling**: Validator is decoupled from concrete implementations in other packages
+- **Flexibility**: New implementations can be added without modifying validator
+- **Testability**: Easy to mock dependencies for testing
+- **Maintainability**: Changes to implementations don't affect validator
+
+### Package Responsibilities
+
+This package is responsible for:
+
+1. **Header validation**: Validates authentication headers from HTTP requests
+2. **Priority resolution**: Determines which authentication method to use based on header presence and priority rules
+3. **Configuration extraction**: Extracts authentication configuration from headers
+4. **Error reporting**: Provides detailed validation errors and warnings
+
+#### What This Package Does
+
+- **Validates headers**: Checks authentication headers for validity and completeness
+- **Prioritizes methods**: Determines authentication method priority (SAP destination > MCP destination > JWT token > Basic auth)
+- **Extracts config**: Extracts `SapConfig` from validated headers
+- **Reports errors**: Provides detailed error messages and warnings for invalid configurations
+- **Type safety**: Returns typed validation results with configuration objects
+
+#### What This Package Does NOT Do
+
+- **Does NOT handle authentication**: Authentication is handled by `@mcp-abap-adt/connection` and `@mcp-abap-adt/auth-broker`
+- **Does NOT manage tokens**: Token management is handled by `@mcp-abap-adt/auth-broker`
+- **Does NOT make HTTP requests**: HTTP requests are handled by `@mcp-abap-adt/connection`
+- **Does NOT store configuration**: Configuration storage is handled by consumers
+- **Does NOT know about destinations**: Destination resolution is handled by `@mcp-abap-adt/auth-broker`
+
+### External Dependencies
+
+This package interacts with external packages **ONLY through interfaces**:
+
+- **`@mcp-abap-adt/connection`**: Uses `SapConfig` type for configuration - does not know about concrete connection implementation
+- **No direct dependencies on other packages**: All interactions happen through well-defined types and interfaces
+
 ## Installation
 
 ```bash
