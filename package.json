@@ -44,6 +44,9 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "dependencies": {
+    "@mcp-abap-adt/interfaces": "^0.1.0"
+  },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^24.2.1",

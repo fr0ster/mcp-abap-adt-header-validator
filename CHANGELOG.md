@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2024-12-04
+
+### Added
+- **Interfaces Package Integration**: Migrated to use `@mcp-abap-adt/interfaces` package for all interface definitions
+  - All interfaces now imported from shared package
+  - Backward compatibility maintained with type aliases
+  - Dependency on `@mcp-abap-adt/interfaces@^0.1.0` added
+
+### Changed
+- **Interface Renaming**: Interfaces renamed to follow `I` prefix convention:
+  - `ValidatedAuthConfig` → `IValidatedAuthConfig` (type alias for backward compatibility)
+  - `HeaderValidationResult` → `IHeaderValidationResult` (type alias for backward compatibility)
+  - `AuthType` and `AuthMethodPriority` now imported from interfaces package
+  - Old names still work via type aliases for backward compatibility
+
 ## [0.1.3] - 2025-12-01
 
 ### Fixed

@@ -8,7 +8,11 @@
  */
 
 import { IncomingHttpHeaders } from 'http';
-import { AuthType, AuthMethodPriority, ValidatedAuthConfig, HeaderValidationResult } from './types';
+import type { AuthType } from '@mcp-abap-adt/interfaces';
+import { AuthMethodPriority, type IValidatedAuthConfig, type IHeaderValidationResult } from '@mcp-abap-adt/interfaces';
+
+// Re-export for backward compatibility
+import type { ValidatedAuthConfig, HeaderValidationResult } from './types';
 
 /**
  * Extract header value (handles array values)

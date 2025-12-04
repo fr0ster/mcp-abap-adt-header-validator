@@ -3,69 +3,12 @@
  */
 
 import { IncomingHttpHeaders } from 'http';
+import type { AuthType } from '@mcp-abap-adt/interfaces';
+import { AuthMethodPriority, type IValidatedAuthConfig, type IHeaderValidationResult } from '@mcp-abap-adt/interfaces';
 
-/**
- * Authentication type
- */
-export type AuthType = 'jwt' | 'xsuaa' | 'basic';
-
-/**
- * Authentication method priority
- * Higher number = higher priority
- */
-export enum AuthMethodPriority {
-  SAP_DESTINATION = 4,    // x-sap-destination (uses AuthBroker, JWT only)
-  MCP_DESTINATION = 3,    // x-mcp-destination + x-sap-auth-type=jwt (uses AuthBroker)
-  DIRECT_JWT = 2,         // x-sap-jwt-token + x-sap-auth-type=jwt
-  BASIC = 1,              // x-sap-login + x-sap-password + x-sap-auth-type=basic
-  NONE = 0                // No valid authentication
-}
-
-/**
- * Validated authentication configuration
- */
-export interface ValidatedAuthConfig {
-  /** Authentication method priority */
-  priority: AuthMethodPriority;
-  /** Authentication type */
-  authType: AuthType;
-  /** SAP URL */
-  sapUrl: string;
-  /** SAP Client (optional) */
-  sapClient?: string;
-  /** Destination name (for destination-based auth: x-sap-destination or x-mcp-destination) */
-  destination?: string;
-  /** JWT token (for direct JWT auth) */
-  jwtToken?: string;
-  /** Refresh token (optional, for JWT auth) */
-  refreshToken?: string;
-  /** UAA URL (optional, for JWT auth) */
-  uaaUrl?: string;
-  /** UAA Client ID (optional, for JWT auth) */
-  uaaClientId?: string;
-  /** UAA Client Secret (optional, for JWT auth) */
-  uaaClientSecret?: string;
-  /** Username (for basic auth) */
-  username?: string;
-  /** Password (for basic auth) */
-  password?: string;
-  /** Validation errors (if any) */
-  errors: string[];
-  /** Warnings (if any) */
-  warnings: string[];
-}
-
-/**
- * Header validation result
- */
-export interface HeaderValidationResult {
-  /** Is configuration valid? */
-  isValid: boolean;
-  /** Validated authentication configuration */
-  config?: ValidatedAuthConfig;
-  /** Validation errors */
-  errors: string[];
-  /** Warnings */
-  warnings: string[];
-}
+// Re-export for backward compatibility
+export type { AuthType };
+export { AuthMethodPriority };
+export type ValidatedAuthConfig = IValidatedAuthConfig;
+export type HeaderValidationResult = IHeaderValidationResult;
 
