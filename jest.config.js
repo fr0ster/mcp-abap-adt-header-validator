@@ -5,10 +5,20 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.ts'],
   collectCoverageFrom: [
     'src/**/*.ts',
+    '!src/**/*.d.ts',
     '!src/**/*.test.ts',
-    '!src/**/__tests__/**'
+    '!src/__tests__/**',
   ],
   coverageDirectory: 'coverage',
-  verbose: true
+  coverageReporters: ['text', 'lcov', 'html'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: {
+        esModuleInterop: true,
+      },
+    }],
+  },
+  verbose: true,
 };
 

@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2025-01-XX
+
+### Added
+- **Header Sets Documentation**: Added comprehensive documentation section on header sets in `USAGE.md`
+  - **Set 1: Basic Authentication Set** - Documents that `x-sap-login`, `x-sap-password`, and `x-sap-auth-type: basic` must be provided together
+  - **Set 2: UAA Refresh Token Set** - Documents that UAA headers (`x-sap-uaa-url`, `x-sap-uaa-client-id`, `x-sap-uaa-client-secret`) must be provided together when used (optional)
+  - **Set 3: Direct JWT Authentication** - Documents minimal set requirements for JWT authentication
+  - Includes validation rules, examples, and error scenarios for each set
+
+### Changed
+- **Header Constants Migration**: Replaced all hardcoded header strings with constants from `@mcp-abap-adt/interfaces`
+  - Updated `@mcp-abap-adt/interfaces` dependency from `^0.1.1` to `^0.1.2`
+  - All header references now use constants (e.g., `HEADER_SAP_LOGIN`, `HEADER_SAP_PASSWORD`, `HEADER_SAP_AUTH_TYPE`, etc.)
+  - Improved type safety and consistency across packages
+
+### Fixed
+- **Basic Auth Validation**: Enhanced validation to ensure `x-sap-login` and `x-sap-password` are provided together as a cohesive set
+  - Validation now checks if either header is present, both must be present
+  - Improved error messages for missing basic auth headers
+- **UAA Headers Validation**: Enhanced validation for UAA refresh token headers
+  - Added warning when UAA headers are partially provided
+  - Clarified that UAA headers are optional and only used for token refresh
+  - UAA headers do not affect authorization validation
+
+### Technical
+- **Test Updates**: Updated all tests to use header constants instead of hardcoded strings
+- **Jest Configuration**: Updated Jest to version 30.2.0 and ts-jest to 29.2.5 (aligned with auth-providers package)
+- **Dependencies**: Added `jest-util@^30.2.0` as dev dependency to resolve Jest compatibility issues
+
 ## [0.1.6] - 2025-12-05
 
 ### Changed

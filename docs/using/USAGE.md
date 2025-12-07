@@ -145,6 +145,122 @@ const result = validateAuthHeaders(headers);
 // result.config.priority === 1 (BASIC)
 ```
 
+## Header Sets
+
+The validator enforces that certain headers must be provided together as cohesive sets. This ensures proper authentication configuration and prevents partial or invalid setups.
+
+### Set 1: Basic Authentication Set (Required Together)
+
+When using basic authentication, all three headers must be provided together:
+
+- `x-sap-login` - Username
+- `x-sap-password` - Password  
+- `x-sap-auth-type: basic` - Authentication type
+
+**Rules**:
+- If `x-sap-login` or `x-sap-password` is present, both must be present
+- If `x-sap-auth-type: basic` is specified, both `x-sap-login` and `x-sap-password` are required
+- Validation will fail if any part of this set is missing
+
+**Example**:
+```typescript
+// ✅ Valid - all three headers together
+const validHeaders = {
+  'x-sap-url': 'https://test.sap.com',
+  'x-sap-auth-type': 'basic',
+  'x-sap-login': 'username',
+  'x-sap-password': 'password',
+};
+
+// ❌ Invalid - missing password
+const invalidHeaders = {
+  'x-sap-url': 'https://test.sap.com',
+  'x-sap-auth-type': 'basic',
+  'x-sap-login': 'username',
+  // Missing x-sap-password
+};
+```
+
+### Set 2: UAA Refresh Token Set (Optional, Must Be Complete)
+
+When providing UAA configuration for token refresh, all three headers must be provided together:
+
+- `x-sap-uaa-url` (or `uaa-url`) - UAA server URL
+- `x-sap-uaa-client-id` (or `uaa-client-id`) - UAA client ID
+- `x-sap-uaa-client-secret` (or `uaa-client-secret`) - UAA client secret
+
+**Rules**:
+- These headers are **optional** and only used for token refresh
+- If any one of these headers is present, all three must be present
+- Partial UAA configuration will generate a warning
+- These headers do not affect authorization validation (only token refresh)
+
+**Example**:
+```typescript
+// ✅ Valid - all three UAA headers together (optional)
+const validHeaders = {
+  'x-sap-url': 'https://test.sap.com',
+  'x-sap-auth-type': 'jwt',
+  'x-sap-jwt-token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...',
+  'x-sap-uaa-url': 'https://uaa.test.com',
+  'x-sap-uaa-client-id': 'client_id',
+  'x-sap-uaa-client-secret': 'client_secret',
+};
+
+// ⚠️ Warning - partial UAA configuration
+const partialHeaders = {
+  'x-sap-url': 'https://test.sap.com',
+  'x-sap-auth-type': 'jwt',
+  'x-sap-jwt-token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...',
+  'x-sap-uaa-url': 'https://uaa.test.com',
+  // Missing x-sap-uaa-client-id and x-sap-uaa-client-secret
+  // Will generate warning: "UAA headers should be provided together for token refresh"
+};
+```
+
+### Set 3: Direct JWT Authentication (Minimal Set)
+
+For direct JWT authentication, only one header is required for authorization:
+
+- `x-sap-jwt-token` - JWT token (sufficient for authorization)
+
+**Optional additions**:
+- `x-sap-refresh-token` - Refresh token (optional)
+- UAA Refresh Token Set (Set 2) - Optional, only for token refresh
+
+**Rules**:
+- `x-sap-jwt-token` alone is sufficient for authorization
+- UAA headers (Set 2) are optional and do not affect authorization validation
+- UAA headers are only used for token refresh operations
+
+**Example**:
+```typescript
+// ✅ Valid - minimal set (only JWT token)
+const minimalHeaders = {
+  'x-sap-url': 'https://test.sap.com',
+  'x-sap-auth-type': 'jwt',
+  'x-sap-jwt-token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...',
+};
+
+// ✅ Valid - with optional refresh token
+const withRefreshHeaders = {
+  'x-sap-url': 'https://test.sap.com',
+  'x-sap-auth-type': 'jwt',
+  'x-sap-jwt-token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...',
+  'x-sap-refresh-token': 'refresh_token',
+};
+
+// ✅ Valid - with optional UAA refresh set
+const withUaaHeaders = {
+  'x-sap-url': 'https://test.sap.com',
+  'x-sap-auth-type': 'jwt',
+  'x-sap-jwt-token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...',
+  'x-sap-uaa-url': 'https://uaa.test.com',
+  'x-sap-uaa-client-id': 'client_id',
+  'x-sap-uaa-client-secret': 'client_secret',
+};
+```
+
 ## Priority Resolution Examples
 
 ### Example 1: SAP Destination Takes Priority
