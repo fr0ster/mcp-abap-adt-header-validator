@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8] - 2025-12-13
+
+### Changed
+- Dependency bump: `@mcp-abap-adt/interfaces` to `^0.1.16` for consistency with latest interfaces release
+
 ## [0.1.7] - 2025-01-XX
 
 ### Added
@@ -127,4 +132,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Node.js version**: >= 18.0.0
 - **Module system**: CommonJS
 - **Build output**: TypeScript compiled to JavaScript with type definitions
-
