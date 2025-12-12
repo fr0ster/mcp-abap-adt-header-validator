@@ -1,6 +1,6 @@
 {
   "name": "@mcp-abap-adt/header-validator",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Header validator for MCP ABAP ADT - validates and prioritizes authentication headers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
