@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9] - 2025-12-22
+
+### Changed
+- **Biome Migration**: Migrated from ESLint/Prettier to Biome for linting and formatting
+  - Added `@biomejs/biome` as dev dependency
+  - Added `lint`, `lint:check`, and `format` scripts to package.json
+  - Integrated Biome check into build process (`npx biome check src --diagnostic-level=error`)
+  - Updated Node.js imports to use `node:` protocol for better explicitness
+
+### Fixed
+- Fixed non-null assertion by adding proper null check for `mcpUrl`
+- Removed unused imports
+- Organized imports according to Biome rules
+
 ## [0.1.8] - 2025-12-13
 
 ### Changed

@@ -1,52 +1,53 @@
 /**
  * Header validator for MCP ABAP ADT authentication headers
- * 
+ *
  * Provides validation functions for different contexts:
  * - MCP server headers: x-sap-destination, x-mcp-destination, x-sap-url, x-sap-jwt-token, etc.
  * - Proxy headers: x-btp-destination, x-mcp-destination, x-mcp-url
- * 
+ *
  * MCP authentication headers are validated and prioritized according to:
  * 1. Destination-based auth (x-sap-destination, x-mcp-destination) - highest priority
  * 2. Direct JWT token (x-sap-jwt-token) - medium priority
  * 3. Basic auth (x-sap-login + x-sap-password) - lowest priority
  */
 
-import { IncomingHttpHeaders } from 'http';
+import type { IncomingHttpHeaders } from 'node:http';
 import type { AuthType } from '@mcp-abap-adt/interfaces';
 import {
+  AUTH_TYPE_BASIC,
+  AUTH_TYPE_JWT,
+  AUTH_TYPE_XSUAA,
   AuthMethodPriority,
-  type IValidatedAuthConfig,
-  type IHeaderValidationResult,
-  HEADER_SAP_DESTINATION_SERVICE,
-  HEADER_MCP_DESTINATION,
   HEADER_BTP_DESTINATION,
+  HEADER_MCP_DESTINATION,
   HEADER_MCP_URL,
+  HEADER_SAP_AUTH_TYPE,
   HEADER_SAP_CLIENT,
+  HEADER_SAP_DESTINATION_SERVICE,
+  HEADER_SAP_JWT_TOKEN,
   HEADER_SAP_LOGIN,
   HEADER_SAP_PASSWORD,
-  HEADER_SAP_URL,
-  HEADER_SAP_JWT_TOKEN,
-  HEADER_SAP_AUTH_TYPE,
   HEADER_SAP_REFRESH_TOKEN,
-  HEADER_SAP_UAA_URL,
-  HEADER_UAA_URL,
   HEADER_SAP_UAA_CLIENT_ID,
-  HEADER_UAA_CLIENT_ID,
   HEADER_SAP_UAA_CLIENT_SECRET,
+  HEADER_SAP_UAA_URL,
+  HEADER_SAP_URL,
+  HEADER_UAA_CLIENT_ID,
   HEADER_UAA_CLIENT_SECRET,
-  AUTH_TYPE_JWT,
-  AUTH_TYPE_BASIC,
-  AUTH_TYPE_XSUAA,
+  HEADER_UAA_URL,
 } from '@mcp-abap-adt/interfaces';
 
 // Re-export for backward compatibility
-import type { ValidatedAuthConfig, HeaderValidationResult } from './types';
+import type { HeaderValidationResult, ValidatedAuthConfig } from './types';
 
 /**
  * Extract header value (handles array values)
  * Node.js normalizes headers to lowercase, but check both cases for safety
  */
-function getHeaderValue(headers: IncomingHttpHeaders, name: string): string | undefined {
+function getHeaderValue(
+  headers: IncomingHttpHeaders,
+  name: string,
+): string | undefined {
   // Try lowercase first (Node.js normalizes to lowercase)
   let value = headers[name.toLowerCase()];
   // If not found, try original case (for compatibility)
@@ -80,16 +81,18 @@ function isValidUrl(url: string): boolean {
  * URL is taken from destination (service key or .env), not from x-sap-url header
  */
 function validateSapDestinationAuth(
-  headers: IncomingHttpHeaders
+  headers: IncomingHttpHeaders,
 ): ValidatedAuthConfig | null {
   // Check both lowercase and original case (Node.js normalizes to lowercase, but check both for safety)
-  const destinationRaw = headers[HEADER_SAP_DESTINATION_SERVICE.toLowerCase()] || headers[HEADER_SAP_DESTINATION_SERVICE];
+  const destinationRaw =
+    headers[HEADER_SAP_DESTINATION_SERVICE.toLowerCase()] ||
+    headers[HEADER_SAP_DESTINATION_SERVICE];
   if (!destinationRaw) {
     return null;
   }
-  
+
   const destination = getHeaderValue(headers, HEADER_SAP_DESTINATION_SERVICE);
-  
+
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -115,19 +118,25 @@ function validateSapDestinationAuth(
   // Warning if x-sap-url is provided (URL comes from destination, not header)
   const sapUrl = getHeaderValue(headers, HEADER_SAP_URL);
   if (sapUrl) {
-    warnings.push(`${HEADER_SAP_URL} is ignored when ${HEADER_SAP_DESTINATION_SERVICE} is present (URL is loaded from destination service key or .env file)`);
+    warnings.push(
+      `${HEADER_SAP_URL} is ignored when ${HEADER_SAP_DESTINATION_SERVICE} is present (URL is loaded from destination service key or .env file)`,
+    );
   }
 
   // Warning if direct JWT token is also provided (destination takes priority)
   const jwtToken = getHeaderValue(headers, HEADER_SAP_JWT_TOKEN);
   if (jwtToken) {
-    warnings.push(`${HEADER_SAP_JWT_TOKEN} is ignored when ${HEADER_SAP_DESTINATION_SERVICE} is present (destination-based auth takes priority)`);
+    warnings.push(
+      `${HEADER_SAP_JWT_TOKEN} is ignored when ${HEADER_SAP_DESTINATION_SERVICE} is present (destination-based auth takes priority)`,
+    );
   }
 
   // Warning if auth-type is provided (not needed for x-sap-destination)
   const authType = getHeaderValue(headers, HEADER_SAP_AUTH_TYPE);
   if (authType) {
-    warnings.push(`${HEADER_SAP_AUTH_TYPE} is ignored when ${HEADER_SAP_DESTINATION_SERVICE} is present (always uses JWT)`);
+    warnings.push(
+      `${HEADER_SAP_AUTH_TYPE} is ignored when ${HEADER_SAP_DESTINATION_SERVICE} is present (always uses JWT)`,
+    );
   }
 
   return {
@@ -151,14 +160,16 @@ function validateSapDestinationAuth(
  */
 function validateMcpDestinationAuth(
   headers: IncomingHttpHeaders,
-  sapUrl?: string
+  sapUrl?: string,
 ): ValidatedAuthConfig | null {
   // Check both lowercase and original case (Node.js normalizes to lowercase, but check both for safety)
-  const destinationRaw = headers[HEADER_MCP_DESTINATION.toLowerCase()] || headers[HEADER_MCP_DESTINATION];
+  const destinationRaw =
+    headers[HEADER_MCP_DESTINATION.toLowerCase()] ||
+    headers[HEADER_MCP_DESTINATION];
   if (!destinationRaw) {
     return null;
   }
-  
+
   const destination = getHeaderValue(headers, HEADER_MCP_DESTINATION);
 
   const errors: string[] = [];
@@ -178,13 +189,17 @@ function validateMcpDestinationAuth(
 
   // Warning if x-sap-url is provided (URL comes from destination, not header)
   if (sapUrl) {
-    warnings.push(`${HEADER_SAP_URL} is ignored when ${HEADER_MCP_DESTINATION} is present (URL is loaded from destination service key or .env file)`);
+    warnings.push(
+      `${HEADER_SAP_URL} is ignored when ${HEADER_MCP_DESTINATION} is present (URL is loaded from destination service key or .env file)`,
+    );
   }
 
   // Warning if x-sap-auth-type is provided (not needed for x-mcp-destination)
   const authType = getHeaderValue(headers, HEADER_SAP_AUTH_TYPE);
   if (authType) {
-    warnings.push(`${HEADER_SAP_AUTH_TYPE} is ignored when ${HEADER_MCP_DESTINATION} is present (always uses JWT)`);
+    warnings.push(
+      `${HEADER_SAP_AUTH_TYPE} is ignored when ${HEADER_MCP_DESTINATION} is present (always uses JWT)`,
+    );
   }
 
   // Extract optional SAP client
@@ -193,7 +208,9 @@ function validateMcpDestinationAuth(
   // Warning if direct JWT token is also provided (destination takes priority)
   const jwtToken = getHeaderValue(headers, HEADER_SAP_JWT_TOKEN);
   if (jwtToken) {
-    warnings.push(`${HEADER_SAP_JWT_TOKEN} is ignored when ${HEADER_MCP_DESTINATION} is present (destination-based auth takes priority)`);
+    warnings.push(
+      `${HEADER_SAP_JWT_TOKEN} is ignored when ${HEADER_MCP_DESTINATION} is present (destination-based auth takes priority)`,
+    );
   }
 
   return {
@@ -209,7 +226,7 @@ function validateMcpDestinationAuth(
 
 /**
  * Validate direct JWT authentication (medium priority)
- * 
+ *
  * For authorization, only x-sap-jwt-token is required.
  * UAA headers (x-sap-uaa-url, x-sap-uaa-client-id, x-sap-uaa-client-secret) are optional
  * and only used for token refresh - they are a separate set of headers.
@@ -217,14 +234,14 @@ function validateMcpDestinationAuth(
 function validateDirectJwtAuth(
   headers: IncomingHttpHeaders,
   sapUrl: string,
-  authType: AuthType
+  authType: AuthType,
 ): ValidatedAuthConfig | null {
   if (authType !== AUTH_TYPE_JWT && authType !== AUTH_TYPE_XSUAA) {
     return null;
   }
 
   const jwtToken = getHeaderValue(headers, HEADER_SAP_JWT_TOKEN);
-  
+
   if (!jwtToken) {
     return null;
   }
@@ -239,23 +256,31 @@ function validateDirectJwtAuth(
 
   // Extract optional refresh token
   const refreshToken = getHeaderValue(headers, HEADER_SAP_REFRESH_TOKEN);
-  
+
   // Extract optional UAA config (for token refresh only - separate set of headers)
   // These are optional and don't affect authorization validation
-  const uaaUrl = getHeaderValue(headers, HEADER_SAP_UAA_URL) || getHeaderValue(headers, HEADER_UAA_URL);
-  const uaaClientId = getHeaderValue(headers, HEADER_SAP_UAA_CLIENT_ID) || getHeaderValue(headers, HEADER_UAA_CLIENT_ID);
-  const uaaClientSecret = getHeaderValue(headers, HEADER_SAP_UAA_CLIENT_SECRET) || getHeaderValue(headers, HEADER_UAA_CLIENT_SECRET);
-  
+  const uaaUrl =
+    getHeaderValue(headers, HEADER_SAP_UAA_URL) ||
+    getHeaderValue(headers, HEADER_UAA_URL);
+  const uaaClientId =
+    getHeaderValue(headers, HEADER_SAP_UAA_CLIENT_ID) ||
+    getHeaderValue(headers, HEADER_UAA_CLIENT_ID);
+  const uaaClientSecret =
+    getHeaderValue(headers, HEADER_SAP_UAA_CLIENT_SECRET) ||
+    getHeaderValue(headers, HEADER_UAA_CLIENT_SECRET);
+
   // Validate UAA config completeness if any UAA header is present
   if (uaaUrl || uaaClientId || uaaClientSecret) {
     if (!uaaUrl || !uaaClientId || !uaaClientSecret) {
-      warnings.push(`UAA headers (${HEADER_SAP_UAA_URL}, ${HEADER_SAP_UAA_CLIENT_ID}, ${HEADER_SAP_UAA_CLIENT_SECRET}) should be provided together for token refresh`);
+      warnings.push(
+        `UAA headers (${HEADER_SAP_UAA_URL}, ${HEADER_SAP_UAA_CLIENT_ID}, ${HEADER_SAP_UAA_CLIENT_SECRET}) should be provided together for token refresh`,
+      );
     }
   }
-  
+
   // Extract optional SAP client
   const sapClient = getHeaderValue(headers, HEADER_SAP_CLIENT);
-  
+
   return {
     priority: AuthMethodPriority.DIRECT_JWT,
     authType,
@@ -277,15 +302,17 @@ function validateDirectJwtAuth(
 function validateBasicAuth(
   headers: IncomingHttpHeaders,
   sapUrl: string,
-  authType: AuthType
+  authType: AuthType,
 ): ValidatedAuthConfig | null {
   if (authType !== AUTH_TYPE_BASIC) {
     return null;
   }
 
-  const usernameRaw = headers[HEADER_SAP_LOGIN.toLowerCase()] || headers[HEADER_SAP_LOGIN];
-  const passwordRaw = headers[HEADER_SAP_PASSWORD.toLowerCase()] || headers[HEADER_SAP_PASSWORD];
-  
+  const usernameRaw =
+    headers[HEADER_SAP_LOGIN.toLowerCase()] || headers[HEADER_SAP_LOGIN];
+  const passwordRaw =
+    headers[HEADER_SAP_PASSWORD.toLowerCase()] || headers[HEADER_SAP_PASSWORD];
+
   if (!usernameRaw || !passwordRaw) {
     return null;
   }
@@ -304,7 +331,7 @@ function validateBasicAuth(
   if (!password || password.length === 0) {
     errors.push(`${HEADER_SAP_PASSWORD} header is empty`);
   }
-  
+
   // Return config with errors if validation failed
   if (errors.length > 0) {
     return {
@@ -329,11 +356,13 @@ function validateBasicAuth(
 
 /**
  * Validate and prioritize authentication headers
- * 
+ *
  * @param headers HTTP headers
  * @returns Validation result with prioritized authentication configuration
  */
-export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValidationResult {
+export function validateAuthHeaders(
+  headers?: IncomingHttpHeaders,
+): HeaderValidationResult {
   // No headers provided - this is not an error, user may be using .env file
   if (!headers) {
     return {
@@ -417,31 +446,43 @@ export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValida
   const hasSapLogin = !!getHeaderValue(headers, HEADER_SAP_LOGIN);
   const hasSapPassword = !!getHeaderValue(headers, HEADER_SAP_PASSWORD);
   const hasBasicAuthHeaders = hasSapLogin || hasSapPassword;
-  
+
   if (hasBasicAuthHeaders && (!hasSapLogin || !hasSapPassword)) {
-    errors.push(`${HEADER_SAP_LOGIN} and ${HEADER_SAP_PASSWORD} must be provided together`);
+    errors.push(
+      `${HEADER_SAP_LOGIN} and ${HEADER_SAP_PASSWORD} must be provided together`,
+    );
   }
 
   // 3. Other auth methods require x-sap-auth-type
   const sapAuthType = getHeaderValue(headers, HEADER_SAP_AUTH_TYPE);
   if (sapAuthType) {
     // Validate auth type
-    const validAuthTypes: AuthType[] = [AUTH_TYPE_JWT, AUTH_TYPE_XSUAA, AUTH_TYPE_BASIC];
+    const validAuthTypes: AuthType[] = [
+      AUTH_TYPE_JWT,
+      AUTH_TYPE_XSUAA,
+      AUTH_TYPE_BASIC,
+    ];
     const authType = sapAuthType.toLowerCase() as AuthType;
-    
+
     if (!validAuthTypes.includes(authType)) {
-      errors.push(`${HEADER_SAP_AUTH_TYPE} must be one of: ${validAuthTypes.join(', ')}, got: ${sapAuthType}`);
+      errors.push(
+        `${HEADER_SAP_AUTH_TYPE} must be one of: ${validAuthTypes.join(', ')}, got: ${sapAuthType}`,
+      );
     } else {
       // Check if basic auth headers are present but auth-type is not basic
       if (hasBasicAuthHeaders && authType !== AUTH_TYPE_BASIC) {
-        warnings.push(`${HEADER_SAP_LOGIN} and ${HEADER_SAP_PASSWORD} are present but ${HEADER_SAP_AUTH_TYPE} is not "${AUTH_TYPE_BASIC}"`);
+        warnings.push(
+          `${HEADER_SAP_LOGIN} and ${HEADER_SAP_PASSWORD} are present but ${HEADER_SAP_AUTH_TYPE} is not "${AUTH_TYPE_BASIC}"`,
+        );
       }
-      
+
       // Check if auth-type is basic but headers are missing
       if (authType === AUTH_TYPE_BASIC && !hasBasicAuthHeaders) {
-        errors.push(`${HEADER_SAP_AUTH_TYPE} is "${AUTH_TYPE_BASIC}" but ${HEADER_SAP_LOGIN} and ${HEADER_SAP_PASSWORD} are missing`);
+        errors.push(
+          `${HEADER_SAP_AUTH_TYPE} is "${AUTH_TYPE_BASIC}" but ${HEADER_SAP_LOGIN} and ${HEADER_SAP_PASSWORD} are missing`,
+        );
       }
-      
+
       // Only validate direct JWT and basic auth if MCP destination is not present
       // (MCP destination already handled above)
       if (!mcpDestinationConfig) {
@@ -462,10 +503,14 @@ export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValida
     // No auth-type provided
     // If basic auth headers are present, auth-type must be basic
     if (hasBasicAuthHeaders) {
-      errors.push(`${HEADER_SAP_AUTH_TYPE} must be "${AUTH_TYPE_BASIC}" when ${HEADER_SAP_LOGIN} and ${HEADER_SAP_PASSWORD} are present`);
+      errors.push(
+        `${HEADER_SAP_AUTH_TYPE} must be "${AUTH_TYPE_BASIC}" when ${HEADER_SAP_LOGIN} and ${HEADER_SAP_PASSWORD} are present`,
+      );
     } else if (!mcpDestinationConfig && !sapDestinationConfig) {
       // No auth-type and no destination - error
-      errors.push(`${HEADER_SAP_AUTH_TYPE} header is required when ${HEADER_SAP_DESTINATION_SERVICE} and ${HEADER_MCP_DESTINATION} are not present`);
+      errors.push(
+        `${HEADER_SAP_AUTH_TYPE} header is required when ${HEADER_SAP_DESTINATION_SERVICE} and ${HEADER_MCP_DESTINATION} are not present`,
+      );
     }
   }
 
@@ -474,9 +519,13 @@ export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValida
     if (sapAuthType) {
       const authType = sapAuthType.toLowerCase() as AuthType;
       if (authType === AUTH_TYPE_JWT || authType === AUTH_TYPE_XSUAA) {
-        errors.push(`JWT authentication requires either ${HEADER_SAP_DESTINATION_SERVICE}, ${HEADER_MCP_DESTINATION}, or ${HEADER_SAP_JWT_TOKEN} header`);
+        errors.push(
+          `JWT authentication requires either ${HEADER_SAP_DESTINATION_SERVICE}, ${HEADER_MCP_DESTINATION}, or ${HEADER_SAP_JWT_TOKEN} header`,
+        );
       } else if (authType === AUTH_TYPE_BASIC) {
-        errors.push(`Basic authentication requires ${HEADER_SAP_LOGIN} and ${HEADER_SAP_PASSWORD} headers`);
+        errors.push(
+          `Basic authentication requires ${HEADER_SAP_LOGIN} and ${HEADER_SAP_PASSWORD} headers`,
+        );
       }
     } else {
       // Check if MCP destination was found but has errors
@@ -485,7 +534,7 @@ export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValida
         errors.push(...mcpConfig.errors);
       }
     }
-    
+
     return {
       isValid: false,
       errors,
@@ -494,14 +543,18 @@ export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValida
   }
 
   // Select highest priority configuration
-  const selectedConfig = configs.reduce((prev, current) => 
-    current.priority > prev.priority ? current : prev
+  const selectedConfig = configs.reduce((prev, current) =>
+    current.priority > prev.priority ? current : prev,
   );
 
   // Check for conflicts (multiple auth methods with same priority shouldn't happen, but check anyway)
-  const samePriorityConfigs = configs.filter(c => c.priority === selectedConfig.priority);
+  const samePriorityConfigs = configs.filter(
+    (c) => c.priority === selectedConfig.priority,
+  );
   if (samePriorityConfigs.length > 1) {
-    warnings.push(`Multiple authentication methods with same priority detected, using: ${AuthMethodPriority[selectedConfig.priority]}`);
+    warnings.push(
+      `Multiple authentication methods with same priority detected, using: ${AuthMethodPriority[selectedConfig.priority]}`,
+    );
   }
 
   // Merge errors and warnings
@@ -518,7 +571,7 @@ export function validateAuthHeaders(headers?: IncomingHttpHeaders): HeaderValida
 
 /**
  * Proxy Header Validation
- * 
+ *
  * Functions to validate proxy-specific headers (x-btp-destination, x-mcp-destination, x-mcp-url)
  * These are separate from MCP authentication headers and used for proxy routing decisions.
  */
@@ -534,16 +587,18 @@ export interface ProxyHeaderValidationResult {
 
 /**
  * Validate proxy routing headers
- * 
+ *
  * Checks for proxy-specific headers:
  * - x-btp-destination: BTP Cloud authorization destination
  * - x-mcp-destination: SAP ABAP connection destination
  * - x-mcp-url: Direct MCP server URL
- * 
+ *
  * @param headers HTTP headers
  * @returns Validation result indicating which proxy headers are present
  */
-export function validateProxyHeaders(headers?: IncomingHttpHeaders): ProxyHeaderValidationResult {
+export function validateProxyHeaders(
+  headers?: IncomingHttpHeaders,
+): ProxyHeaderValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -567,17 +622,23 @@ export function validateProxyHeaders(headers?: IncomingHttpHeaders): ProxyHeader
   const hasMcpUrl = !!mcpUrl;
 
   // Validate destination names if present
-  if (hasBtpDestination && (!btpDestination || btpDestination.trim().length === 0)) {
+  if (
+    hasBtpDestination &&
+    (!btpDestination || btpDestination.trim().length === 0)
+  ) {
     errors.push(`${HEADER_BTP_DESTINATION} header is empty`);
   }
 
-  if (hasMcpDestination && (!mcpDestination || mcpDestination.trim().length === 0)) {
+  if (
+    hasMcpDestination &&
+    (!mcpDestination || mcpDestination.trim().length === 0)
+  ) {
     errors.push(`${HEADER_MCP_DESTINATION} header is empty`);
   }
 
   // Validate mcpUrl format if present
-  if (hasMcpUrl) {
-    if (!isValidUrl(mcpUrl!)) {
+  if (hasMcpUrl && mcpUrl) {
+    if (!isValidUrl(mcpUrl)) {
       errors.push(`${HEADER_MCP_URL} is not a valid URL: ${mcpUrl}`);
     }
   }
@@ -585,7 +646,9 @@ export function validateProxyHeaders(headers?: IncomingHttpHeaders): ProxyHeader
   // At least one proxy header should be present for proxy routing
   const hasAnyProxyHeader = hasBtpDestination || hasMcpDestination || hasMcpUrl;
   if (!hasAnyProxyHeader) {
-    warnings.push(`No proxy headers found (${HEADER_BTP_DESTINATION}, ${HEADER_MCP_DESTINATION}, or ${HEADER_MCP_URL})`);
+    warnings.push(
+      `No proxy headers found (${HEADER_BTP_DESTINATION}, ${HEADER_MCP_DESTINATION}, or ${HEADER_MCP_URL})`,
+    );
   }
 
   return {
@@ -600,12 +663,12 @@ export function validateProxyHeaders(headers?: IncomingHttpHeaders): ProxyHeader
 
 /**
  * Check if headers indicate a proxy request
- * 
+ *
  * A request is considered a proxy request if it has at least one of:
  * - x-btp-destination
  * - x-mcp-destination
  * - x-mcp-url
- * 
+ *
  * @param headers HTTP headers
  * @returns true if headers indicate a proxy request
  */
@@ -615,16 +678,20 @@ export function isProxyRequest(headers?: IncomingHttpHeaders): boolean {
   }
 
   const validation = validateProxyHeaders(headers);
-  return validation.hasBtpDestination || validation.hasMcpDestination || validation.hasMcpUrl;
+  return (
+    validation.hasBtpDestination ||
+    validation.hasMcpDestination ||
+    validation.hasMcpUrl
+  );
 }
 
 /**
  * Check if headers indicate an MCP server request (not proxy)
- * 
+ *
  * An MCP server request has MCP authentication headers but no proxy headers:
  * - Has x-sap-destination, x-mcp-destination, x-sap-url, x-sap-jwt-token, etc.
  * - Does NOT have x-btp-destination or x-mcp-url (proxy-specific)
- * 
+ *
  * @param headers HTTP headers
  * @returns true if headers indicate an MCP server request
  */
@@ -634,7 +701,10 @@ export function isMcpServerRequest(headers?: IncomingHttpHeaders): boolean {
   }
 
   // Check for MCP authentication headers
-  const hasSapDestination = !!getHeaderValue(headers, HEADER_SAP_DESTINATION_SERVICE);
+  const hasSapDestination = !!getHeaderValue(
+    headers,
+    HEADER_SAP_DESTINATION_SERVICE,
+  );
   const hasMcpDestination = !!getHeaderValue(headers, HEADER_MCP_DESTINATION);
   const hasSapUrl = !!getHeaderValue(headers, HEADER_SAP_URL);
   const hasSapJwtToken = !!getHeaderValue(headers, HEADER_SAP_JWT_TOKEN);
@@ -644,9 +714,9 @@ export function isMcpServerRequest(headers?: IncomingHttpHeaders): boolean {
   const hasMcpUrl = !!getHeaderValue(headers, HEADER_MCP_URL);
 
   // MCP server request has MCP auth headers but no proxy headers
-  const hasMcpAuthHeaders = hasSapDestination || hasMcpDestination || hasSapUrl || hasSapJwtToken;
+  const hasMcpAuthHeaders =
+    hasSapDestination || hasMcpDestination || hasSapUrl || hasSapJwtToken;
   const hasProxyHeaders = hasBtpDestination || hasMcpUrl;
 
   return hasMcpAuthHeaders && !hasProxyHeaders;
 }
-

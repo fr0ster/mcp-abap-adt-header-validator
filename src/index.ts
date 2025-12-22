@@ -1,15 +1,14 @@
 /**
  * Header validator for MCP ABAP ADT
- * 
+ *
  * Validates and prioritizes authentication headers for MCP ABAP ADT servers
  */
 
-export { 
+export {
+  isMcpServerRequest,
+  isProxyRequest,
+  type ProxyHeaderValidationResult,
   validateAuthHeaders,
   validateProxyHeaders,
-  isProxyRequest,
-  isMcpServerRequest,
-  type ProxyHeaderValidationResult,
 } from './headerValidator';
 export * from './types';
-
