@@ -1,4 +1,5 @@
 # @mcp-abap-adt/header-validator
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua)
 
 Header validator for MCP ABAP ADT - validates and prioritizes authentication headers.
 
