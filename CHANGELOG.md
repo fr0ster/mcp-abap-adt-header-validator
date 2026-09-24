@@ -5,7 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-09-24
+
+### Changed
+
+- **The contracts come from the packages that declare them, not from the deleted
+  facade.** `@mcp-abap-adt/interfaces@^0.1.16` is replaced by
+  `@mcp-abap-adt/interfaces-network@^2.0.0`,
+  `@mcp-abap-adt/interfaces-auth-sap@^1.0.0` and
+  `@mcp-abap-adt/interfaces-auth@^1.2.0`. Three files repointed.
+
+  | from | names |
+  |---|---|
+  | `interfaces-network` | 17 — every header name this package validates, with the groups over them |
+  | `interfaces-auth-sap` | `AuthType`, `AuthMethodPriority`, `IValidatedAuthConfig`, `IHeaderValidationResult`, `IAuthorizationConfig` |
+  | `interfaces-auth` | `AUTH_TYPE_JWT`, `AUTH_TYPE_BASIC` |
+
+  **This is the repository the contract split was measured on.** It imports 24
+  names and **not one is an ADT contract** — it validates headers and reads
+  authentication configuration — yet it was pinned to `@mcp-abap-adt/interfaces`
+  major **0**, seventeen versions behind that package's own 0.1.x line and 51
+  majors behind where the facade ended. One step forward used to cost it every
+  other package's history; now a header name changes at `interfaces-network`'s
+  pace, which has had three releases ever.
+
+  Nothing is renamed and no shape changed, so the change reaches a consumer as an
+  import path and nothing else.
+
+- **Note on 0.2.0.** It was tagged and released on GitHub on 2026-09-03 — the
+  LGPL relicensing — and never published: npm serves **0.1.8**, under MIT. So a
+  consumer moving to this release crosses both changes at once, and the licence
+  reaches npm for the first time here. The 0.2.0 entry below stands as written;
+  only its publication never happened.
 
 ## [0.2.0] - 2026-09-03
 

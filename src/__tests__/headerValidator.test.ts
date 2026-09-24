@@ -4,9 +4,8 @@
  */
 
 import type { IncomingHttpHeaders } from 'node:http';
+import { AUTH_TYPE_BASIC, AUTH_TYPE_JWT } from '@mcp-abap-adt/interfaces-auth';
 import {
-  AUTH_TYPE_BASIC,
-  AUTH_TYPE_JWT,
   HEADER_MCP_DESTINATION,
   HEADER_SAP_AUTH_TYPE,
   HEADER_SAP_CLIENT,
@@ -19,7 +18,7 @@ import {
   HEADER_SAP_UAA_CLIENT_SECRET,
   HEADER_SAP_UAA_URL,
   HEADER_SAP_URL,
-} from '@mcp-abap-adt/interfaces';
+} from '@mcp-abap-adt/interfaces-network';
 import { validateAuthHeaders } from '../headerValidator';
 import { AuthMethodPriority } from '../types';
 
