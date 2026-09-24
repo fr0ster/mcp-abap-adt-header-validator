@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The contracts come from the packages that declare them, not from the deleted
+  facade.** `@mcp-abap-adt/interfaces@^0.1.16` is replaced by
+  `@mcp-abap-adt/interfaces-network@^2.0.0`,
+  `@mcp-abap-adt/interfaces-auth-sap@^1.0.0` and
+  `@mcp-abap-adt/interfaces-auth@^1.2.0`. Three files repointed.
+
+  | from | names |
+  |---|---|
+  | `interfaces-network` | 17 — every header name this package validates, with the groups over them |
+  | `interfaces-auth-sap` | `AuthType`, `AuthMethodPriority`, `IValidatedAuthConfig`, `IHeaderValidationResult`, `IAuthorizationConfig` |
+  | `interfaces-auth` | `AUTH_TYPE_JWT`, `AUTH_TYPE_BASIC` |
+
+  **This is the repository the contract split was measured on.** It imports 24
+  names and **not one is an ADT contract** — it validates headers and reads
+  authentication configuration — yet it was pinned to `@mcp-abap-adt/interfaces`
+  major **0**, seventeen versions behind that package's own 0.1.x line and 51
+  majors behind where the facade ended. One step forward used to cost it every
+  other package's history; now a header name changes at `interfaces-network`'s
+  pace, which has had three releases ever.
+
+  Nothing is renamed and no shape changed, so the change reaches a consumer as an
+  import path and nothing else.
+
 ## [0.2.0] - 2026-09-03
 
 ### Licence

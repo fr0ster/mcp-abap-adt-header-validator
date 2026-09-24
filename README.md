@@ -57,8 +57,11 @@ This package is responsible for:
 
 This package interacts with external packages **ONLY through interfaces**:
 
-- **`@mcp-abap-adt/connection`**: Uses `SapConfig` type for configuration - does not know about concrete connection implementation
-- **No direct dependencies on other packages**: All interactions happen through well-defined types and interfaces
+- **`@mcp-abap-adt/interfaces-network`**: every header name it validates, and the groups over them — a header name says how a value travels, not what it means, which is why they are there and not in the ADT contract
+- **`@mcp-abap-adt/interfaces-auth-sap`**: `AuthType`, `AuthMethodPriority`, `IValidatedAuthConfig`, `IHeaderValidationResult`, `IAuthorizationConfig` — what an SAP or BTP connection's authentication looks like once validated
+- **`@mcp-abap-adt/interfaces-auth`**: `AUTH_TYPE_JWT` and `AUTH_TYPE_BASIC` — a bearer token and a user with a password, which mean the same thing off SAP
+- **Not `@mcp-abap-adt/interfaces`**: that facade is **deleted** as of its 52.0.0. npm still serves 51.0.0 to anyone pinned to it, with every symbol re-exported and deprecated, and nothing further ships there
+- **No dependency on an implementation package**: all interactions happen through those contracts
 
 ## Installation
 

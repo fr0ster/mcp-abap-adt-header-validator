@@ -12,12 +12,13 @@
  */
 
 import type { IncomingHttpHeaders } from 'node:http';
-import type { AuthType } from '@mcp-abap-adt/interfaces';
+import { AUTH_TYPE_BASIC, AUTH_TYPE_JWT } from '@mcp-abap-adt/interfaces-auth';
+import type { AuthType } from '@mcp-abap-adt/interfaces-auth-sap';
 import {
-  AUTH_TYPE_BASIC,
-  AUTH_TYPE_JWT,
   AUTH_TYPE_XSUAA,
   AuthMethodPriority,
+} from '@mcp-abap-adt/interfaces-auth-sap';
+import {
   HEADER_BTP_DESTINATION,
   HEADER_MCP_DESTINATION,
   HEADER_MCP_URL,
@@ -35,7 +36,7 @@ import {
   HEADER_UAA_CLIENT_ID,
   HEADER_UAA_CLIENT_SECRET,
   HEADER_UAA_URL,
-} from '@mcp-abap-adt/interfaces';
+} from '@mcp-abap-adt/interfaces-network';
 
 // Re-export for backward compatibility
 import type { HeaderValidationResult, ValidatedAuthConfig } from './types';

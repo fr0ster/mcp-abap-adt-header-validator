@@ -2,12 +2,12 @@
  * Types for header validator
  */
 
-import type { AuthType } from '@mcp-abap-adt/interfaces';
-import {
-  AuthMethodPriority,
-  type IHeaderValidationResult,
-  type IValidatedAuthConfig,
-} from '@mcp-abap-adt/interfaces';
+import type {
+  AuthType,
+  IHeaderValidationResult,
+  IValidatedAuthConfig,
+} from '@mcp-abap-adt/interfaces-auth-sap';
+import { AuthMethodPriority } from '@mcp-abap-adt/interfaces-auth-sap';
 
 // Re-export for backward compatibility
 export type { AuthType };
