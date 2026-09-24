@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-09-24
 
 ### Changed
 
@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   Nothing is renamed and no shape changed, so the change reaches a consumer as an
   import path and nothing else.
+
+- **Note on 0.2.0.** It was tagged and released on GitHub on 2026-09-03 — the
+  LGPL relicensing — and never published: npm serves **0.1.8**, under MIT. So a
+  consumer moving to this release crosses both changes at once, and the licence
+  reaches npm for the first time here. The 0.2.0 entry below stands as written;
+  only its publication never happened.
 
 ## [0.2.0] - 2026-09-03
 
