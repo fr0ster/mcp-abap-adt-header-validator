@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-26
+
+### Changed
+
+- **`@mcp-abap-adt/interfaces-auth` `^2.0.1` and `-auth-sap` `^1.0.1`.** This
+  package takes two constants from `interfaces-auth`, `AUTH_TYPE_BASIC` and
+  `AUTH_TYPE_JWT`, which major 2 leaves as they were; its one break makes
+  `AssertionContext.expectedInResponseTo` optional, which no file here names.
+  `-auth-sap` 1.0.1 is the release that accepts `-auth` 2 — with 1.0.0 an
+  install carried a second, private copy of `-auth` 1.x under it. No API change.
+
 ## [0.3.0] - 2026-09-24
 
 ### Changed
